@@ -85,6 +85,16 @@ Deploy the ELK stack using `kubectl`:
 kubectl apply -f kubernetes/option-2-kubectl/
 ```
 
+### **Accessing Kibana**
+
+To access the Kibana UI:
+
+1. Forward the Kibana service port to your local machine:
+   ```bash
+   kubectl port-forward service/kibana 5601:5601
+   ```
+2. Open your browser and go to `http://localhost:5601`.
+
 #### **When to Choose This Option**
 - **Simplicity**: Best for straightforward deployments without much customization.
 - **Fine-Grained Control**: Offers full control over every detail in the manifests.
@@ -114,6 +124,16 @@ Deploy with custom values by overriding specific settings:
 helm install elk-stack kubernetes/option-1-helm --set elasticVersion=7.12.0 --set elasticsearch.storage=2Gi
 ```
 
+### **Accessing Kibana**
+
+To access the Kibana UI:
+
+1. Forward the Kibana service port to your local machine:
+   ```bash
+   kubectl port-forward service/kibana 5601:5601
+   ```
+2. Open your browser and go to `http://localhost:5601`.
+
 #### **When to Choose This Option**
 - **Scalability**: Suitable for large and complex environments.
 - **Reusability**: Ideal for deploying multiple instances with varying configurations.
@@ -132,16 +152,6 @@ kubectl get pods
 ```
 
 Ensure that all services (`elasticsearch`, `kibana`, `logstash`, `setup`) are running smoothly.
-
-### **Accessing Kibana**
-
-To access the Kibana UI:
-
-1. Forward the Kibana service port to your local machine:
-   ```bash
-   kubectl port-forward service/kibana 5601:5601
-   ```
-2. Open your browser and go to `http://localhost:5601`.
 
 ### **Checking Logs**
 
