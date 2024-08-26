@@ -26,10 +26,10 @@ spec:
             secretKeyRef:
               name: elastic-credentials
               key: logstash_password
-          volumeMounts:
-          - name: config-volume
-            mountPath: /usr/share/logstash/config/logstash.yml
-            subPath: logstash.yml
+        volumeMounts:  # This should be outside of env, directly under container spec
+        - name: config-volume
+          mountPath: /usr/share/logstash/config/logstash.yml
+          subPath: logstash.yml
       volumes:
       - name: config-volume
         configMap:
@@ -37,7 +37,6 @@ spec:
           items:
           - key: logstash.yml
             path: logstash.yml
-
 ---
 apiVersion: v1
 kind: Service
