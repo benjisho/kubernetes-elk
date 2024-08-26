@@ -1,193 +1,207 @@
-## Deploying the ELK Stack on Kubernetes
+# **Deploys the ELK Stack on Kubernetes**
 
-You can deploy the ELK stack on Kubernetes using two different approaches: `kubectl` with raw Kubernetes manifests or Helm with customizable templates. Each approach has its advantages, depending on your needs and the complexity of your deployment.
+This guide provides detailed instructions for deploying the ELK stack on Kubernetes, using either raw Kubernetes manifests with `kubectl` or Helm with customizable templates. Each method has its own advantages, depending on your deployment needs.
 
-### 1. Deploy with `kubectl`
+## **Table of Contents**
+1. [Project Structure](#project-structure)
+2. [Creation of Resources](#creation-of-resources)
+3. [Installation and Deployment](#installation-and-deployment)
+   - [Deploy with `kubectl`](#deploy-with-kubectl)
+   - [Deploy with Helm](#deploy-with-helm)
+4. [Maintenance and Monitoring](#maintenance-and-monitoring)
+5. [Troubleshooting and Updates](#troubleshooting-and-updates)
+6. [Deletion and Clean-Up](#deletion-and-clean-up)
 
-#### Structure and Files
+---
 
-The `kubectl` option is located under the `kubernetes/option-2-kubectl/` directory. This directory contains raw Kubernetes manifests that describe the deployment of Elasticsearch, Logstash, Kibana, and a one-time setup job.
+## **1. Project Structure**
 
-Here are the key files:
+The project is structured into two main deployment options:
 
-- **`elasticsearch.yaml`**: Defines a `StatefulSet` for Elasticsearch, ensuring persistent storage for your data and enabling easier scaling.
-- **`logstash.yaml`**: Defines a `Deployment` for Logstash, responsible for collecting, processing, and forwarding logs to Elasticsearch.
-- **`kibana.yaml`**: Defines a `Deployment` for Kibana, which provides a web interface for visualizing data stored in Elasticsearch.
-- **`setup.yaml`**: Defines a `Job` that runs a one-time setup script to initialize users and roles in Elasticsearch.
+- **`kubernetes/option-2-kubectl/`**: Contains raw Kubernetes manifests for deploying the ELK stack using `kubectl`.
+- **`kubernetes/option-1-helm/`**: Contains a Helm chart for deploying the ELK stack with customizable templates.
 
-#### What It Does
+### **Directory Contents**
 
-This approach uses predefined Kubernetes resources without any templating. The files directly specify how each component should be deployed and connected, including configuration, secrets, and storage.
+#### **kubectl Deployment (`kubernetes/option-2-kubectl/`)**
+- **`elasticsearch.yaml`**: StatefulSet for Elasticsearch.
+- **`logstash.yaml`**: Deployment for Logstash.
+- **`kibana.yaml`**: Deployment for Kibana.
+- **`setup.yaml`**: Job for initializing Elasticsearch users and roles.
 
-#### How to Deploy
+#### **Helm Deployment (`kubernetes/option-1-helm/`)**
+- **`Chart.yaml`**: Metadata about the Helm chart.
+- **`values.yaml`**: Default configuration values.
+- **`templates/`**: Helm templates for generating Kubernetes manifests dynamically.
 
-```sh
+---
+
+## **2. Creation of Resources**
+
+Before deploying the ELK stack, you need to create the necessary Kubernetes resources:
+
+### **Secrets and ConfigMaps**
+
+#### **Create Secrets**
+
+Create the `elastic-credentials` secret to store passwords for Elasticsearch, Kibana, and Logstash:
+
+```bash
+kubectl create secret generic elastic-credentials \
+  --from-literal=elastic_password=<your-elastic-password> \
+  --from-literal=kibana_password=<your-kibana-password> \
+  --from-literal=logstash_password=<your-logstash-password>
+```
+
+#### **Create ConfigMaps**
+
+Create the `logstash-config` ConfigMap with the Logstash configuration:
+
+```bash
+kubectl create configmap logstash-config --from-file=logstash/config/logstash.yml
+```
+
+Create the `setup-scripts` ConfigMap for the setup job:
+
+```bash
+kubectl create configmap setup-scripts --from-file=setup/entrypoint.sh --from-file=setup/lib.sh
+```
+
+---
+
+## **3. Installation and Deployment**
+
+### **Deploy with `kubectl`**
+
+#### **Structure and Files**
+
+The `kubectl` deployment is defined by raw Kubernetes manifests located in the `kubernetes/option-2-kubectl/` directory.
+
+#### **How to Deploy**
+
+Deploy the ELK stack using `kubectl`:
+
+```bash
 kubectl apply -f kubernetes/option-2-kubectl/
 ```
 
-This command will create all the necessary Kubernetes resources for the ELK stack.
+#### **When to Choose This Option**
+- **Simplicity**: Best for straightforward deployments without much customization.
+- **Fine-Grained Control**: Offers full control over every detail in the manifests.
+- **Smaller Deployments**: Ideal for smaller environments or proof-of-concept setups.
 
-#### When to Choose This Option
+### **Deploy with Helm**
 
-- **Simplicity**: If you need a straightforward deployment without much customization.
-- **Smaller Deployments**: Ideal for smaller environments or proof-of-concept deployments where advanced templating isn't required.
-- **Fine-Grained Control**: You have full control over every detail in the manifests, which is useful if you need to make very specific adjustments.
+#### **Structure and Files**
 
-### 2. Deploy with Helm
+The Helm deployment is defined by a Helm chart located in the `kubernetes/option-1-helm/` directory.
 
-#### Structure and Files
+#### **How to Deploy**
 
-The Helm option is located under the `kubernetes/option-1-helm/` directory. This directory contains a Helm chart that automates the deployment of the ELK stack. 
+##### **Basic Deployment with Default Values**
 
-Here are the key files:
+Deploy using the default values in `values.yaml`:
 
-- **`Chart.yaml`**: Contains metadata about the Helm chart, including the version and description.
-- **`values.yaml`**: Provides default configuration values that can be customized when deploying the chart.
-- **`templates/`**: Contains Helm templates for Kubernetes resources (like `StatefulSet`, `Deployment`, `Service`, etc.). These templates are populated with values from `values.yaml` or from user-provided overrides.
-
-#### What It Does
-
-Helm templates allow for dynamic generation of Kubernetes manifests. The `values.yaml` file provides default values, but you can override these during deployment to customize the ELK stack. The templates inside the `templates/` directory are used to generate Kubernetes manifests on the fly, based on the input values.
-
-#### How to Deploy
-
-##### Basic Deployment with Default Values
-
-```sh
+```bash
 helm install elk-stack kubernetes/option-1-helm
 ```
 
-This command will deploy the ELK stack using the default values defined in `values.yaml`.
+##### **Custom Deployment with Overrides**
 
-##### Custom Deployment with Overrides
+Deploy with custom values by overriding specific settings:
 
-```sh
+```bash
 helm install elk-stack kubernetes/option-1-helm --set elasticVersion=7.12.0 --set elasticsearch.storage=2Gi
 ```
 
-This command will override specific values in the `values.yaml` file, allowing for a customized deployment.
+#### **When to Choose This Option**
+- **Scalability**: Suitable for large and complex environments.
+- **Reusability**: Ideal for deploying multiple instances with varying configurations.
+- **Customization**: Offers extensive customization through Helm's templating system.
 
-#### When to Choose This Option
+---
 
-- **Scalability**: Helm is better suited for larger, more complex environments where you may need to deploy multiple instances with varying configurations.
-- **Reusability**: If you plan to deploy the ELK stack in multiple environments (e.g., dev, staging, production) with slight variations, Helm makes this process easier.
-- **Customization**: Helm's templating system allows for extensive customization without needing to manually edit the raw Kubernetes manifests.
+## **4. Maintenance and Monitoring**
 
-### 3. Deploy with Helm and Custom Templates
+### **Monitoring the Deployment**
 
-#### What the Templates Are For
+After deployment, monitor the status of the pods:
 
-The templates in the `templates/` directory are used to generate the actual Kubernetes manifests based on the `values.yaml` file or any overrides you provide during deployment. These templates make it easy to reuse the same configuration across different environments while allowing for flexibility.
+```bash
+kubectl get pods
+```
 
-#### When to Use Templates
+Ensure that all services (`elasticsearch`, `kibana`, `logstash`, `setup`) are running smoothly.
 
-- **Complex Environments**: Use templates when deploying to environments that require different configurations, such as varying resource limits, storage sizes, or number of replicas.
-- **Automation**: Helm's templating and values system is ideal if you are integrating the deployment into a CI/CD pipeline where the configuration might need to change dynamically.
-- **Environment-Specific Configurations**: If your deployment needs to adapt to different environments (e.g., a dev environment with minimal resources vs. a production environment with higher availability), Helm templates allow you to manage these differences cleanly.
+### **Accessing Kibana**
 
-#### When Not to Use Templates
+To access the Kibana UI:
 
-- **Simple Deployments**: If you do not need the flexibility of Helm or if your deployment is small and straightforward, the plain `kubectl` approach might be more appropriate.
-- **Learning Curve**: If your team is unfamiliar with Helm and templating, it might introduce unnecessary complexity.
+1. Forward the Kibana service port to your local machine:
+   ```bash
+   kubectl port-forward service/kibana 5601:5601
+   ```
+2. Open your browser and go to `http://localhost:5601`.
 
-Certainly! Here's a step-by-step procedure for deploying the ELK stack on Kubernetes using Helm, including the troubleshooting steps we followed.
+### **Checking Logs**
 
-### **Deep Dive Procedure to Deploy ELK Stack on Kubernetes Using Helm**
+Verify the logs for each component to ensure they are functioning correctly:
 
-#### **1. Set Up the Kubernetes Cluster**
-   - Ensure you have a running Kubernetes cluster. If you're using Minikube, start the cluster with:
-     ```bash
-     minikube start --driver=docker
-     ```
+```bash
+kubectl logs elasticsearch-0
+kubectl logs kibana-7f58c79487-5fvvv
+kubectl logs logstash-6f98c4c97f-w9kpw
+kubectl logs setup-gdp4v
+```
 
-#### **2. Prepare the Helm Chart**
-   - Create a directory structure for Kubernetes deployment using Helm:
-     ```bash
-     mkdir -p kubernetes/option-1-helm/templates
-     ```
-   - Place the necessary YAML files for Elasticsearch, Kibana, Logstash, and Setup in the `templates` directory.
+---
 
-#### **3. Create Necessary Kubernetes Resources**
+## **5. Troubleshooting and Updates**
 
-   - **Create Secrets and ConfigMaps:**
-     - Create the `elastic-credentials` secret, which stores passwords for Elasticsearch, Kibana, and Logstash:
-       ```bash
-       kubectl create secret generic elastic-credentials \
-         --from-literal=elastic_password=<your-elastic-password> \
-         --from-literal=kibana_password=<your-kibana-password> \
-         --from-literal=logstash_password=<your-logstash-password>
-       ```
-     - Create the `logstash-config` ConfigMap with the Logstash configuration:
-       ```bash
-       kubectl create configmap logstash-config --from-file=logstash/config/logstash.yml
-       ```
-     - Create the `setup-scripts` ConfigMap for the setup job:
-       ```bash
-       kubectl create configmap setup-scripts --from-file=setup/entrypoint.sh --from-file=setup/lib.sh
-       ```
+### **Troubleshoot Deployment Issues**
 
-#### **4. Deploy the ELK Stack Using Helm**
+If you encounter deployment issues:
 
-   - Install or upgrade the Helm chart:
-     ```bash
-     helm upgrade --install elk-stack ./kubernetes/option-1-helm/
-     ```
+1. **Immutable Fields**: If changes to the pod template cause errors:
+   ```bash
+   kubectl delete job setup
+   ```
 
-#### **5. Troubleshoot Deployment Issues (if any)**
+2. **Reapply Helm Chart**: After making necessary changes:
+   ```bash
+   helm upgrade --install elk-stack ./kubernetes/option-1-helm/
+   ```
 
-   - If you encounter errors with immutable fields or configuration issues, delete the affected resources:
-     ```bash
-     kubectl delete job setup
-     ```
-   - Update the necessary YAML files and reapply the Helm chart:
-     ```bash
-     helm upgrade --install elk-stack ./kubernetes/option-1-helm/
-     ```
+### **Updating Resources**
 
-#### **6. Monitor the Deployment**
+To update configurations or secrets, modify the relevant YAML files or Helm values, then reapply using `kubectl` or Helm.
 
-   - Check the status of the pods:
-     ```bash
-     kubectl get pods
-     ```
-   - Ensure that all pods (`elasticsearch`, `kibana`, `logstash`, `setup`) are in the `Running` state.
+---
 
-#### **7. Access and Verify the ELK Stack**
+## **6. Deletion and Clean-Up**
 
-   - **Access Kibana:**
-     - Forward the Kibana service port to your local machine:
-       ```bash
-       kubectl port-forward service/kibana 5601:5601
-       ```
-     - Open a browser and navigate to `http://localhost:5601` to access the Kibana UI.
-   - **Check Logs:**
-     - Verify the logs for each component to ensure they are running correctly:
-       ```bash
-       kubectl logs elasticsearch-0
-       kubectl logs kibana-7f58c79487-5fvvv
-       kubectl logs logstash-6f98c4c97f-w9kpw
-       kubectl logs setup-gdp4v
-       ```
+### **Delete the ELK Stack**
 
-#### **8. Clean Up Resources**
+To remove the ELK stack deployment:
 
-   - After the setup job completes, check its status:
-     ```bash
-     kubectl get jobs
-     ```
-   - If the job is no longer needed, delete it:
-     ```bash
-     kubectl delete job setup
-     ```
+#### **Using `kubectl`**
 
-### **Conclusion**
+```bash
+kubectl delete -f kubernetes/option-2-kubectl/
+```
 
-By following this procedure, you should have successfully deployed the ELK stack on Kubernetes using Helm, with all components running and accessible via Kibana. The setup and configuration should be verified by checking the logs and ensuring all services are functioning correctly.
+#### **Using Helm**
 
-If further adjustments or troubleshooting are required, repeat the necessary steps to resolve any issues.
+```bash
+helm uninstall elk-stack
+```
 
-### Summary
+### **Clean Up Resources**
 
-- **Use `kubectl`** if you need simplicity, fine-grained control, or are dealing with a smaller deployment.
-- **Use Helm with Default Values** for scalable, reusable, and consistent deployments across multiple environments.
-- **Use Helm with Custom Templates** if you need extensive customization, are dealing with complex environments, or are automating deployments as part of a CI/CD pipeline.
+After deletion, ensure all related resources (pods, services, ConfigMaps, secrets) are also removed:
+
+```bash
+kubectl get all
+```
+
+Delete any remaining resources manually if needed.
