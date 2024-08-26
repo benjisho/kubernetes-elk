@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  labels:
+    app: logstash
+spec:
+  replicas: {{ .Values.logstash.replicaCount }}
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      containers:
+      - name: logstash
+        image: docker.elastic.co/logstash/logstash:{{ .Values.elasticVersion }}
+        ports:
+        - containerPort: 5044
+        - containerPort: 9600
+        env:
+        - name: LOGSTASH_INTERNAL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: elastic-credentials
+              key: logstash_password
+          volumeMounts:
+          - name: config-volume
+            mountPath: /usr/share/logstash/config/logstash.yml
+            subPath: logstash.yml
+      volumes:
+      - name: config-volume
+        configMap:
+          name: logstash-config
+          items:
+          - key: logstash.yml
+            path: logstash.yml
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+spec:
+  ports:
+    - name: beats
+      port: 5044
+      targetPort: 5044
+    - name: metrics
+      port: 9600
+      targetPort: 9600
+  selector:
+    app: logstash

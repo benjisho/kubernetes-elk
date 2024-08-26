@@ -1,0 +1,17 @@
+elasticVersion: "7.10.0"
+elasticPassword: "changeme"
+logstashPassword: "changeme"
+kibanaPassword: "changeme"
+
+elasticsearch:
+  replicaCount: 1
+  resources: {}
+  storage: 1Gi
+
+logstash:
+  replicaCount: 1
+  resources: {}
+
+kibana:
+  replicaCount: 1
+  resources: {}
