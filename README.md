@@ -113,7 +113,7 @@ If you still need to run Minikube as root, here are the steps:
 
 ---
 
-## **2. Creation of Resources**
+## **3. Creation of Resources**
 
 Before deploying the ELK stack, you need to create the necessary Kubernetes resources:
 
@@ -146,7 +146,7 @@ kubectl create configmap setup-scripts --from-file=setup/entrypoint.sh --from-fi
 
 ---
 
-## **3. Installation and Deployment**
+## **4. Installation and Deployment**
 
 ### **Deploy with `kubectl`**
 
@@ -218,7 +218,7 @@ To access the Kibana UI:
 
 ---
 
-## **4. Maintenance and Monitoring**
+## **5. Maintenance and Monitoring**
 
 ### **Monitoring the Deployment**
 
@@ -243,7 +243,7 @@ kubectl logs setup-gdp4v
 
 ---
 
-## **5. Troubleshooting and Updates**
+## **6. Troubleshooting and Updates**
 
 ### **Troubleshoot Deployment Issues**
 
@@ -265,7 +265,7 @@ To update configurations or secrets, modify the relevant YAML files or Helm valu
 
 ---
 
-## **6. Deletion and Clean-Up**
+## **7. Deletion and Clean-Up**
 
 ### **Delete the ELK Stack**
 
