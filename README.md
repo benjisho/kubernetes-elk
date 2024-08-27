@@ -6,13 +6,13 @@ This guide provides detailed instructions for deploying the ELK stack on Kuberne
 1. [Project Structure](#project-structure)
 2. [Minikube Setup](#minikube-setup)
    - [Running Minikube as Root (Not Recommended)](#running-minikube-as-root-not-recommended)
-3. [Creation of Resources](#creation-of-resources)
-4. [Installation and Deployment](#installation-and-deployment)
+3. [Creation of Resources](#3-creation-of-resources)
+4. [Installation and Deployment](#4-installation-and-deployment)
    - [Deploy with `kubectl`](#deploy-with-kubectl)
    - [Deploy with Helm](#deploy-with-helm)
-5. [Maintenance and Monitoring](#maintenance-and-monitoring)
-6. [Troubleshooting and Updates](#troubleshooting-and-updates)
-7. [Deletion and Clean-Up](#deletion-and-clean-up)
+5. [Maintenance and Monitoring](#5-maintenance-and-monitoring)
+6. [Troubleshooting and Updates](#6-troubleshooting-and-updates)
+7. [Deletion and Clean-Up](#7-deletion-and-clean-up)
 
 ---
 
