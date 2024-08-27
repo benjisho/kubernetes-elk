@@ -4,13 +4,15 @@ This guide provides detailed instructions for deploying the ELK stack on Kuberne
 
 ## **Table of Contents**
 1. [Project Structure](#project-structure)
-2. [Creation of Resources](#creation-of-resources)
-3. [Installation and Deployment](#installation-and-deployment)
+2. [Minikube Setup](#minikube-setup)
+   - [Running Minikube as Root (Not Recommended)](#running-minikube-as-root-not-recommended)
+3. [Creation of Resources](#creation-of-resources)
+4. [Installation and Deployment](#installation-and-deployment)
    - [Deploy with `kubectl`](#deploy-with-kubectl)
    - [Deploy with Helm](#deploy-with-helm)
-4. [Maintenance and Monitoring](#maintenance-and-monitoring)
-5. [Troubleshooting and Updates](#troubleshooting-and-updates)
-6. [Deletion and Clean-Up](#deletion-and-clean-up)
+5. [Maintenance and Monitoring](#maintenance-and-monitoring)
+6. [Troubleshooting and Updates](#troubleshooting-and-updates)
+7. [Deletion and Clean-Up](#deletion-and-clean-up)
 
 ---
 
@@ -33,6 +35,81 @@ The project is structured into two main deployment options:
 - **`Chart.yaml`**: Metadata about the Helm chart.
 - **`values.yaml`**: Default configuration values.
 - **`templates/`**: Helm templates for generating Kubernetes manifests dynamically.
+
+---
+
+## **2. Minikube Setup**
+
+If you are using Minikube for your Kubernetes environment, follow these steps to set up and start your Minikube cluster:
+
+### **Install Minikube**
+If you don't already have Minikube installed, you can install it by following the [official Minikube installation guide](https://minikube.sigs.k8s.io/docs/start/).
+
+### **Start Minikube**
+Start the Minikube cluster with the Docker driver:
+
+```bash
+minikube start --driver=docker
+```
+
+### **Verify the Cluster Status**
+Check the status of the Minikube cluster to ensure it's running:
+
+```bash
+minikube status
+```
+
+### **Set Up Docker Environment (Optional)**
+If you want to use Minikube's Docker daemon, configure your shell:
+
+```bash
+eval $(minikube -p minikube docker-env)
+```
+
+This allows you to build Docker images directly within the Minikube environment.
+
+
+---
+
+### **Running Minikube as Root (Not Recommended)**
+
+#### **Warning**
+
+Running Minikube as root is generally not recommended due to the following risks:
+
+1. **Security Risks**: Running as root can expose your system to security vulnerabilities, especially if a container is compromised, as it could potentially gain elevated privileges.
+2. **File Permissions Issues**: Files created by Minikube or Docker while running as root may have restrictive permissions, causing issues for non-root users trying to access or manage these files later.
+3. **Driver Restrictions**: Some Minikube drivers, like the Docker driver, have specific restrictions when running as root. For instance, Minikube may refuse to start, or you may need to use the `--force` flag, which can lead to unexpected behavior.
+
+#### **Steps to Run Minikube as Root**
+
+If you still need to run Minikube as root, here are the steps:
+
+1. **Start Minikube with the `none` Driver**:
+   The `none` driver runs Kubernetes directly on the host without a VM, which is compatible with root privileges.
+   ```bash
+   minikube start --driver=none
+   ```
+
+2. **Forcing Docker Driver (If Absolutely Necessary)**:
+   If you must use the Docker driver as root, you can bypass the restriction with the `--force` flag:
+   ```bash
+   minikube start --driver=docker --force
+   ```
+
+3. **Verify Minikube Status**:
+   Ensure that Minikube is running:
+   ```bash
+   minikube status
+   ```
+
+4. **Running Kubernetes Commands**:
+   Since Minikube is running as root, you’ll need to run all subsequent `kubectl` and Docker commands as root or with `sudo`.
+
+#### **Risks and Considerations**
+
+- **Security**: Consider using a less privileged user or setting up a separate environment for running Minikube to minimize security risks.
+- **Maintenance**: Be aware of potential maintenance issues, such as cleaning up resources and managing permissions for files and directories created by root.
 
 ---
 
