@@ -1,0 +1,31 @@
+name: CI Test NGINX
+
+on:
+  push:
+    paths:
+      - 'kubernetes/option-2-kubectl/nginx.yaml'
+      - '.github/workflows/nginx.yml'
+  pull_request:
+    paths:
+      - 'kubernetes/option-2-kubectl/nginx.yaml'
+      - '.github/workflows/nginx.yml'
+
+jobs:
+  test-nginx:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Kubernetes
+      uses: azure/setup-kubectl@v1
+
+    - name: Deploy NGINX
+      run: |
+        kubectl apply -f kubernetes/option-2-kubectl/nginx.yaml
+        kubectl rollout status deployment/nginx
+
+    - name: Test NGINX deployment
+      run: |
+        kubectl get pods -l app=nginx
+        kubectl logs deployment/nginx
