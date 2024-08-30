@@ -50,7 +50,7 @@ jobs:
 
       - name: Start Minikube with Docker driver
         run: |
-          sudo minikube start --driver=docker
+          sudo minikube start --driver=docker --force
 
       - name: Set up kubectl context
         run: |
