@@ -72,7 +72,10 @@ jobs:
 
       - name: Create Kubernetes Secret for SSL
         run: |
-          kubectl create secret generic nginx-ssl --from-file=ssl/self-signed.crt --from-file=ssl/self-signed.key
+          kubectl create secret generic nginx-ssl \
+            --from-file=ssl/self-signed.crt \
+            --from-file=ssl/self-signed.key \
+            --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Apply Kubernetes manifests
         run: |
