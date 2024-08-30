@@ -18,6 +18,7 @@ This guide provides detailed instructions for deploying the ELK stack on Kuberne
 6. [Maintenance and Monitoring](#5-maintenance-and-monitoring)
 7. [Troubleshooting and Updates](#6-troubleshooting-and-updates)
 8. [Deletion and Clean-Up](#7-deletion-and-clean-up)
+9. [Continuous Integration (CI) Pipeline](#9-continuous-integration-ci-pipeline)
 
 ---
 
@@ -369,3 +370,31 @@ kubectl get all
 ```
 
 Delete any remaining resources manually if needed.
+
+---
+
+## **9. Continuous Integration (CI) Pipeline**
+
+This project includes a CI/CD pipeline configured with GitHub Actions to automate the deployment and testing of the ELK stack on Kubernetes. The pipeline is designed to:
+
+- **Build and Deploy:** Automatically build and deploy the ELK stack using Helm or raw Kubernetes manifests.
+- **Minikube Setup:** Set up a Minikube cluster to simulate the Kubernetes environment for deployment.
+- **Secrets and ConfigMaps:** Automatically create required Kubernetes secrets and ConfigMaps.
+- **Linting and Validation:** Lint Helm charts and validate Kubernetes manifests to ensure correctness.
+- **Deploy ELK Stack:** Deploy the ELK stack, including Elasticsearch, Logstash, Kibana, and NGINX for HTTPS support.
+- **Testing:** Perform basic tests to verify that Kibana is accessible via HTTPS through NGINX.
+- **Clean-Up:** Clean up resources after tests are complete to ensure a clean state for subsequent runs.
+
+### **How It Works**
+
+The CI pipeline is defined in the `.github/workflows/ci.yml` file. Here’s an overview of the main steps:
+
+1. **Checkout Code:** The pipeline checks out the latest code from the repository.
+2. **Set Up Kubernetes and Helm:** Installs `kubectl` and Helm to interact with the Kubernetes cluster.
+3. **Start Minikube:** Starts a Minikube cluster using the Docker driver to provide a Kubernetes environment.
+4. **Create Secrets and ConfigMaps:** Generates the necessary Kubernetes secrets and ConfigMaps for the ELK stack.
+5. **Lint Helm Chart:** Lints the Helm chart to catch syntax issues before deployment.
+6. **Deploy ELK Stack:** Deploys the ELK stack using Helm or `kubectl`.
+7. **Forward Ports for Testing:** Forwards the NGINX service port to test access to Kibana via HTTPS.
+8. **Run Tests:** Executes basic tests to ensure the deployment is successful and Kibana is accessible.
+9. **Clean Up:** Uninstalls the ELK stack and deletes the Minikube cluster to clean up resources.

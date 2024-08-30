@@ -1,0 +1,74 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Kubernetes
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: 'latest'
+
+    - name: Set up Minikube
+      run: |
+        curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        chmod +x minikube
+        sudo mv minikube /usr/local/bin/
+        sudo minikube start --driver=docker
+
+    - name: Use Minikube's Docker daemon
+      run: eval $(minikube docker-env)
+
+    - name: Create elastic-credentials secret
+      run: |
+        kubectl create secret generic elastic-credentials \
+          --from-literal=elastic_password=test_password \
+          --from-literal=kibana_password=test_password \
+          --from-literal=logstash_password=test_password
+
+    - name: Create ConfigMaps
+      run: |
+        kubectl create configmap logstash-config --from-file=logstash/config/logstash.yml
+        kubectl create configmap setup-scripts --from-file=setup/entrypoint.sh --from-file=setup/lib.sh
+
+    - name: Lint Helm chart
+      run: helm lint kubernetes/option-1-helm
+
+    - name: Deploy ELK stack with Helm
+      run: helm upgrade --install elk-stack kubernetes/option-1-helm
+
+    - name: Check pod status
+      run: kubectl get pods
+
+    - name: Forward NGINX port for Kibana access
+      run: |
+        kubectl apply -f kubernetes/option-2-kubectl/nginx.yaml
+        kubectl port-forward service/nginx 443:443 &
+        sleep 10 # Give port-forwarding time to start
+
+    - name: Run tests
+      run: |
+        curl -k https://localhost # Check if NGINX and Kibana are accessible
+
+    - name: Clean up
+      run: |
+        helm uninstall elk-stack
+        minikube delete
+
