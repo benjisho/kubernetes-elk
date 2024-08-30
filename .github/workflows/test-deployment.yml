@@ -65,6 +65,15 @@ jobs:
             echo "Waiting for Kubernetes API..." && sleep 10
           done
 
+      - name: Generate SSL certificate and key
+        run: |
+          mkdir -p ssl
+          openssl req -x509 -nodes -days 1 -newkey rsa:2048 -keyout ssl/self-signed.key -out ssl/self-signed.crt -subj "/CN=localhost"
+
+      - name: Create Kubernetes Secret for SSL
+        run: |
+          kubectl create secret generic nginx-ssl --from-file=ssl/self-signed.crt --from-file=ssl/self-signed.key
+
       - name: Apply Kubernetes manifests
         run: |
           minikube kubectl -- apply -f kubernetes/option-2-kubectl/ --validate=false
