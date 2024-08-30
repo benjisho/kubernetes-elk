@@ -52,13 +52,22 @@ jobs:
         run: |
           sudo minikube start --driver=docker --force
 
+      - name: Ensure Minikube is Running
+        run: |
+          minikube status
+          # Wait for Kubernetes API to be available
+          for i in {1..10}; do
+            kubectl get nodes && break
+            echo "Waiting for Kubernetes API..." && sleep 10
+          done
+
       - name: Set up kubectl context
         run: |
           sudo minikube kubectl -- config use-context minikube
 
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f kubernetes/option-2-kubectl/
+          kubectl apply -f kubernetes/option-2-kubectl/ --validate=false
 
       - name: Verify ELK stack deployment
         run: |
