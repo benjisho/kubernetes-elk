@@ -1,0 +1,27 @@
+name: Lint and Validate
+
+on: [push, pull_request]
+
+jobs:
+  lint-kubernetes:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Install Kubeval
+      run: |
+        curl -sLO https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+        tar xf kubeval-linux-amd64.tar.gz kubeval
+        sudo mv kubeval /usr/local/bin/
+
+    - name: Validate Kubernetes Manifests
+      run: kubeval kubernetes/option-2-kubectl/*.yaml
+
+    - name: Install Helm
+      run: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+    - name: Lint Helm Chart
+      run: helm lint kubernetes/option-1-helm
