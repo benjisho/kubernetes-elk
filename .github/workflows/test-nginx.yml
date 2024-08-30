@@ -19,7 +19,40 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl apt-transport-https virtualbox virtualbox-ext-pack
+          sudo apt-get install -y curl apt-transport-https
           curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
           sudo install minikube /usr/local/bin/
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          sudo apt-get install -y docker.io
+
+      - name: Start Minikube with Docker driver
+        run: |
+          sudo minikube start --driver=docker
+
+      - name: Set up kubectl context
+        run: |
+          sudo minikube kubectl -- config use-context minikube
+
+      - name: Create SSL secret
+        run: |
+          kubectl create secret tls nginx-ssl --cert=config/ssl/self-signed.crt --key=config/ssl/self-signed.key
+
+      - name: Deploy NGINX with HTTPS support using kubectl
+        run: |
+          kubectl apply -f kubernetes/option-2-kubectl/nginx.yaml
+
+      - name: Forward NGINX port
+        run: |
+          kubectl port-forward service/nginx 443:443 &
+          sleep 10
+
+      - name: Test NGINX HTTPS access
+        run: |
+          curl -k https://localhost
+
+      - name: Clean up
+        run: |
+          kubectl delete -f kubernetes/option-2-kubectl/nginx.yaml
+          sudo minikube delete
