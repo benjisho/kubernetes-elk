@@ -33,8 +33,16 @@ jobs:
         sudo mv minikube /usr/local/bin/
         sudo minikube start --driver=docker --force
 
+    - name: Wait for Minikube to be ready
+      run: |
+        while ! minikube status | grep -q "Running"; do
+          echo "Waiting for Minikube to be ready..."
+          sleep 5
+        done
+        echo "Minikube is ready."
+
     - name: Use Minikube's Docker daemon
-      run: eval $(minikube docker-env)
+      run: eval $(minikube -p minikube docker-env)
 
     - name: Create elastic-credentials secret
       run: |
@@ -71,4 +79,3 @@ jobs:
       run: |
         helm uninstall elk-stack
         minikube delete
-
