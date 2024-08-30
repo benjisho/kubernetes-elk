@@ -70,12 +70,25 @@ jobs:
           mkdir -p ssl
           openssl req -x509 -nodes -days 1 -newkey rsa:2048 -keyout ssl/self-signed.key -out ssl/self-signed.crt -subj "/CN=localhost"
 
+      - name: Verify SSL certificate and key
+        run: |
+          echo "-----BEGIN CERTIFICATE-----"
+          cat ssl/self-signed.crt
+          echo "-----END CERTIFICATE-----"
+          echo "-----BEGIN PRIVATE KEY-----"
+          cat ssl/self-signed.key
+          echo "-----END PRIVATE KEY-----"
+
       - name: Create Kubernetes Secret for SSL
         run: |
           kubectl create secret generic nginx-ssl \
             --from-file=ssl/self-signed.crt \
-            --from-file=ssl/self-signed.key \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --from-file=ssl/self-signed.key
+
+      - name: Verify Kubernetes Secret content
+        run: |
+          kubectl get secret nginx-ssl -o jsonpath="{.data['self-signed\.crt']}" | base64 --decode
+          kubectl get secret nginx-ssl -o jsonpath="{.data['self-signed\.key']}" | base64 --decode
 
       - name: Apply Kubernetes manifests
         run: |
