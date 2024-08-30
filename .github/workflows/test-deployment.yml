@@ -1,0 +1,59 @@
+name: Test ELK Stack Deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-elk-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl apt-transport-https virtualbox virtualbox-ext-pack
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube /usr/local/bin/
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Start Minikube
+        run: |
+          sudo minikube start --driver=virtualbox
+
+      - name: Set up kubectl context
+        run: |
+          sudo minikube kubectl -- config use-context minikube
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f kubernetes/option-2-kubectl/
+
+      - name: Verify ELK stack deployment
+        run: |
+          kubectl rollout status statefulset/elasticsearch
+          kubectl rollout status deployment/kibana
+          kubectl rollout status deployment/logstash
+
+      - name: Forward Kibana port
+        run: |
+          kubectl port-forward service/kibana 5601:5601 &
+          sleep 10
+
+      - name: Test Kibana UI is accessible
+        run: |
+          curl -I http://localhost:5601
+
+      - name: Clean up
+        run: |
+          kubectl delete -f kubernetes/option-2-kubectl/
+          sudo minikube delete
