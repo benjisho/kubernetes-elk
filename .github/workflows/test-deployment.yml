@@ -48,36 +48,35 @@ jobs:
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
-      - name: Start Minikube with Docker driver
+      - name: Start Minikube with Docker driver without sudo
         run: |
-          sudo minikube start --driver=docker --force
+          minikube start --driver=docker --cache-dir=/home/runner/.minikube/cache
 
       - name: Use Minikube context
         run: |
-          sudo minikube kubectl -- config use-context minikube
+          minikube kubectl -- config use-context minikube
 
       - name: Verify Minikube status
         run: |
-          sudo minikube status
-          # Wait for Kubernetes API to be available
+          minikube status
           for i in {1..10}; do
-            sudo minikube kubectl -- get nodes && break
+            kubectl get nodes && break
             echo "Waiting for Kubernetes API..." && sleep 10
           done
 
       - name: Apply Kubernetes manifests
         run: |
-          sudo minikube kubectl -- apply -f kubernetes/option-2-kubectl/ --validate=false
+          minikube kubectl -- apply -f kubernetes/option-2-kubectl/ --validate=false
 
       - name: Verify ELK stack deployment
         run: |
-          sudo minikube kubectl -- rollout status statefulset/elasticsearch
-          sudo minikube kubectl -- rollout status deployment/kibana
-          sudo minikube kubectl -- rollout status deployment/logstash
+          minikube kubectl -- rollout status statefulset/elasticsearch
+          minikube kubectl -- rollout status deployment/kibana
+          minikube kubectl -- rollout status deployment/logstash
 
       - name: Forward Kibana port
         run: |
-          sudo minikube kubectl -- port-forward service/kibana 5601:5601 &
+          minikube kubectl -- port-forward service/kibana 5601:5601 &
           sleep 10
 
       - name: Test Kibana UI is accessible
@@ -86,5 +85,5 @@ jobs:
 
       - name: Clean up
         run: |
-          sudo minikube kubectl -- delete -f kubernetes/option-2-kubectl/
-          sudo minikube delete
+          minikube kubectl -- delete -f kubernetes/option-2-kubectl/
+          minikube delete
