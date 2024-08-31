@@ -1,0 +1,101 @@
+name: Test ELK Stack Deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-elk-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Remove conflicting packages
+        run: |
+          for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
+
+      - name: Install Docker dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl
+          sudo install -m 0755 -d /etc/apt/keyrings
+          sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+          sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+      - name: Add Docker repository and install Docker
+        run: |
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+            $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+            sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+      - name: Install Minikube
+        run: |
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Start Minikube with Docker driver
+        run: |
+          minikube start --driver=docker
+
+      - name: Use Minikube context
+        run: |
+          minikube kubectl -- config use-context minikube
+
+      - name: Verify Minikube status
+        run: |
+          minikube status
+          for i in {1..10}; do
+            kubectl get nodes && break
+            echo "Waiting for Kubernetes API..." && sleep 10
+          done
+
+      - name: Generate SSL certificate and key
+        run: |
+          mkdir -p ssl
+          openssl req -x509 -nodes -days 1 -newkey rsa:2048 -keyout ssl/self-signed.key -out ssl/self-signed.crt -subj "/CN=localhost"
+
+      - name: Create Kubernetes Secret for SSL
+        run: |
+          kubectl create secret generic nginx-ssl \
+            --from-file=ssl/self-signed.crt \
+            --from-file=ssl/self-signed.key --save-config
+
+      - name: Apply Kubernetes manifests
+        run: |
+          minikube kubectl -- apply -f kubernetes/option-2-kubectl/ --validate=false
+
+      - name: Verify ELK stack deployment
+        run: |
+          minikube kubectl -- rollout status statefulset/elasticsearch
+          minikube kubectl -- rollout status deployment/kibana
+          minikube kubectl -- rollout status deployment/logstash
+
+      - name: Forward Kibana port
+        run: |
+          minikube kubectl -- port-forward service/kibana 5601:5601 &
+          sleep 10
+
+      - name: Test Kibana UI is accessible
+        run: |
+          curl -I http://localhost:5601
+
+      - name: Clean up
+        run: |
+          minikube kubectl -- delete -f kubernetes/option-2-kubectl/
+          minikube delete

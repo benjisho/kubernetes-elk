@@ -7,16 +7,46 @@ This guide provides detailed instructions for deploying the ELK stack on Kuberne
 2. [Minikube Setup](#minikube-setup)
    - [Running Minikube as Root (Not Recommended)](#running-minikube-as-root-not-recommended)
 3. [Creation of Resources](#3-creation-of-resources)
-4. [Installation and Deployment](#4-installation-and-deployment)
+4. [Enabling HTTPS with NGINX](#enabling-https-with-nginx)
+   - [4.1 Generate a Self-Signed SSL Certificate](#41-generate-a-self-signed-ssl-certificate)
+   - [4.2 Deploy NGINX with `kubectl`](#42-deploy-nginx-with-kubectl)
+   - [4.3 Deploy NGINX with Helm](#43-deploy-nginx-with-helm)
+   - [4.4 Access Kibana via HTTPS](#44-access-kibana-via-https)
+5. [Installation and Deployment](#4-installation-and-deployment)
    - [Deploy with `kubectl`](#deploy-with-kubectl)
    - [Deploy with Helm](#deploy-with-helm)
-5. [Maintenance and Monitoring](#5-maintenance-and-monitoring)
-6. [Troubleshooting and Updates](#6-troubleshooting-and-updates)
-7. [Deletion and Clean-Up](#7-deletion-and-clean-up)
+6. [Maintenance and Monitoring](#5-maintenance-and-monitoring)
+7. [Troubleshooting and Updates](#6-troubleshooting-and-updates)
+8. [Deletion and Clean-Up](#7-deletion-and-clean-up)
+9. [Continuous Integration (CI) Pipeline](#9-continuous-integration-ci-pipeline)
 
 ---
 
 ## **1. Project Structure**
+
+```bash
+kubernetes/
+├── option-1-helm/
+│   ├── templates/
+│   │   ├── elasticsearch.yaml
+│   │   ├── kibana.yaml
+│   │   ├── logstash.yaml
+│   │   ├── nginx.yaml         # New NGINX deployment
+│   │   ├── setup.yaml
+│   └── values.yaml
+└── option-2-kubectl/
+    ├── elasticsearch.yaml
+    ├── kibana.yaml
+    ├── logstash.yaml
+    ├── nginx.yaml              # New NGINX deployment
+    ├── setup.yaml
+config/
+└── ssl/
+    ├── nginx.conf               # NGINX configuration file
+    ├── self-signed.crt          # Self-signed certificate
+    ├── self-signed.key          # Private key for the certificate
+
+```
 
 The project is structured into two main deployment options:
 
@@ -29,12 +59,14 @@ The project is structured into two main deployment options:
 - **`elasticsearch.yaml`**: StatefulSet for Elasticsearch.
 - **`logstash.yaml`**: Deployment for Logstash.
 - **`kibana.yaml`**: Deployment for Kibana.
+- **`nginx.yaml`**: Deployment and service for NGINX with HTTPS support.
 - **`setup.yaml`**: Job for initializing Elasticsearch users and roles.
 
 #### **Helm Deployment (`kubernetes/option-1-helm/`)**
 - **`Chart.yaml`**: Metadata about the Helm chart.
 - **`values.yaml`**: Default configuration values.
 - **`templates/`**: Helm templates for generating Kubernetes manifests dynamically.
+  - **`nginx.yaml`**: NGINX deployment template for HTTPS support.
 
 ---
 
@@ -143,10 +175,56 @@ Create the `setup-scripts` ConfigMap for the setup job:
 ```bash
 kubectl create configmap setup-scripts --from-file=setup/entrypoint.sh --from-file=setup/lib.sh
 ```
+---
+
+## **4. Enabling HTTPS with NGINX**
+
+This section explains how to configure and deploy NGINX as a reverse proxy to provide HTTPS access to Kibana. NGINX will handle SSL termination and redirect traffic from port 443 to Kibana's default port 5601.
+
+### **4.1 Generate a Self-Signed SSL Certificate**
+
+Generate a self-signed SSL certificate using the following command:
+
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ./config/ssl/self-signed.key -out ./config/ssl/self-signed.crt
+```
+
+### **4.2 Deploy NGINX with `kubectl`**
+
+1. **Add NGINX Configuration and Secrets:**
+   - The `nginx.yaml` in `kubernetes/option-2-kubectl/` includes the NGINX deployment and service configuration. It also references the SSL certificate and key stored in a Kubernetes secret.
+
+2. **Deploy NGINX:**
+   - Apply the NGINX deployment using `kubectl`:
+   ```bash
+   kubectl apply -f kubernetes/option-2-kubectl/nginx.yaml
+   ```
+
+### **4.3 Deploy NGINX with Helm**
+
+1. **NGINX Configuration in Helm:**
+   - The Helm chart includes a `nginx.yaml` template that defines the NGINX deployment and service with HTTPS support. The SSL certificate and key are referenced in a Kubernetes secret within the Helm chart.
+
+2. **Deploy NGINX with Helm:**
+   - Install or upgrade the Helm chart to deploy NGINX:
+   ```bash
+   helm upgrade --install elk-stack kubernetes/option-1-helm/
+   ```
+
+### **4.4 Access Kibana via HTTPS**
+
+1. **Forward the NGINX Service Port:**
+   - To access Kibana securely via HTTPS, forward the NGINX service port to your local machine:
+   ```bash
+   kubectl port-forward service/nginx 443:443
+   ```
+
+2. **Open Kibana in Your Browser:**
+   - Navigate to `https://localhost` in your browser.
 
 ---
 
-## **4. Installation and Deployment**
+## **5. Installation and Deployment**
 
 ### **Deploy with `kubectl`**
 
@@ -218,7 +296,7 @@ To access the Kibana UI:
 
 ---
 
-## **5. Maintenance and Monitoring**
+## **6. Maintenance and Monitoring**
 
 ### **Monitoring the Deployment**
 
@@ -243,7 +321,7 @@ kubectl logs setup-gdp4v
 
 ---
 
-## **6. Troubleshooting and Updates**
+## **7. Troubleshooting and Updates**
 
 ### **Troubleshoot Deployment Issues**
 
@@ -265,7 +343,7 @@ To update configurations or secrets, modify the relevant YAML files or Helm valu
 
 ---
 
-## **7. Deletion and Clean-Up**
+## **8. Deletion and Clean-Up**
 
 ### **Delete the ELK Stack**
 
@@ -292,3 +370,31 @@ kubectl get all
 ```
 
 Delete any remaining resources manually if needed.
+
+---
+
+## **9. Continuous Integration (CI) Pipeline**
+
+This project includes a CI/CD pipeline configured with GitHub Actions to automate the deployment and testing of the ELK stack on Kubernetes. The pipeline is designed to:
+
+- **Build and Deploy:** Automatically build and deploy the ELK stack using Helm or raw Kubernetes manifests.
+- **Minikube Setup:** Set up a Minikube cluster to simulate the Kubernetes environment for deployment.
+- **Secrets and ConfigMaps:** Automatically create required Kubernetes secrets and ConfigMaps.
+- **Linting and Validation:** Lint Helm charts and validate Kubernetes manifests to ensure correctness.
+- **Deploy ELK Stack:** Deploy the ELK stack, including Elasticsearch, Logstash, Kibana, and NGINX for HTTPS support.
+- **Testing:** Perform basic tests to verify that Kibana is accessible via HTTPS through NGINX.
+- **Clean-Up:** Clean up resources after tests are complete to ensure a clean state for subsequent runs.
+
+### **How It Works**
+
+The CI pipeline is defined in the `.github/workflows/ci.yml` file. Here’s an overview of the main steps:
+
+1. **Checkout Code:** The pipeline checks out the latest code from the repository.
+2. **Set Up Kubernetes and Helm:** Installs `kubectl` and Helm to interact with the Kubernetes cluster.
+3. **Start Minikube:** Starts a Minikube cluster using the Docker driver to provide a Kubernetes environment.
+4. **Create Secrets and ConfigMaps:** Generates the necessary Kubernetes secrets and ConfigMaps for the ELK stack.
+5. **Lint Helm Chart:** Lints the Helm chart to catch syntax issues before deployment.
+6. **Deploy ELK Stack:** Deploys the ELK stack using Helm or `kubectl`.
+7. **Forward Ports for Testing:** Forwards the NGINX service port to test access to Kibana via HTTPS.
+8. **Run Tests:** Executes basic tests to ensure the deployment is successful and Kibana is accessible.
+9. **Clean Up:** Uninstalls the ELK stack and deletes the Minikube cluster to clean up resources.
