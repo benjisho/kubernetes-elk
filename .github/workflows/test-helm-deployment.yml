@@ -1,4 +1,4 @@
-name: Test ELK Stack Deployment
+name: Test ELK Stack Deployment with Kubectl
 
 on:
   push:
