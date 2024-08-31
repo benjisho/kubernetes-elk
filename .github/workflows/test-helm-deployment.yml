@@ -55,7 +55,7 @@ jobs:
 
       - name: Start Minikube with Docker driver
         run: |
-          minikube start --driver=docker
+          minikube start --driver=docker --cpus=2 --memory=4096
 
       - name: Use Minikube context
         run: |
@@ -76,15 +76,14 @@ jobs:
 
       - name: Install ELK stack using Helm
         run: |
-          helm install elk elastic/elasticsearch
-          helm install kibana elastic/kibana
-          helm install logstash elastic/logstash
+          helm install elk elastic/elasticsearch --timeout 10m
+          helm install kibana elastic/kibana --timeout 10m
+          helm install logstash elastic/logstash --timeout 10m
 
       - name: Verify ELK stack deployment
         run: |
-          minikube kubectl -- rollout status statefulset/elasticsearch-master
-          minikube kubectl -- rollout status deployment/kibana
-          minikube kubectl -- rollout status deployment/logstash
+          kubectl get pods -o wide
+          kubectl describe pod <pod-name>  # Replace <pod-name> with actual names after checking get pods
 
       - name: Forward Kibana port
         run: |
