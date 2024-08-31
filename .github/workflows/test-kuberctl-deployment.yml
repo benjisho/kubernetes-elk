@@ -1,4 +1,4 @@
-name: Test ELK Stack Deployment with Helm
+name: Test ELK Stack Deployment with Kubectl
 
 on:
   push:
@@ -49,10 +49,6 @@ jobs:
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
-      - name: Install Helm
-        run: |
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
       - name: Start Minikube with Docker driver
         run: |
           minikube start --driver=docker
@@ -69,26 +65,19 @@ jobs:
             echo "Waiting for Kubernetes API..." && sleep 10
           done
 
-      - name: Add Helm repository and update
+      - name: Apply Kubernetes manifests
         run: |
-          helm repo add elastic https://helm.elastic.co
-          helm repo update
-
-      - name: Install ELK stack using Helm
-        run: |
-          helm install elk elastic/elasticsearch
-          helm install kibana elastic/kibana
-          helm install logstash elastic/logstash
+          minikube kubectl -- apply -f kubernetes/option-2-kubectl/ --validate=false
 
       - name: Verify ELK stack deployment
         run: |
-          minikube kubectl -- rollout status statefulset/elasticsearch-master
+          minikube kubectl -- rollout status statefulset/elasticsearch
           minikube kubectl -- rollout status deployment/kibana
           minikube kubectl -- rollout status deployment/logstash
 
       - name: Forward Kibana port
         run: |
-          minikube kubectl -- port-forward service/kibana-kibana 5601:5601 &
+          minikube kubectl -- port-forward service/kibana 5601:5601 &
           sleep 10
 
       - name: Test Kibana UI is accessible
@@ -97,7 +86,5 @@ jobs:
 
       - name: Clean up
         run: |
-          helm uninstall elk
-          helm uninstall kibana
-          helm uninstall logstash
+          minikube kubectl -- delete -f kubernetes/option-2-kubectl/
           minikube delete
