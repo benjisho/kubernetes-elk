@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test-elk-deployment:
+  test-kubctl-elk-deployment:
     runs-on: ubuntu-latest
 
     steps:
