@@ -32,7 +32,7 @@ jobs:
         run: |
           echo \
             "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-            $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+            $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" | \
             sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -51,7 +51,7 @@ jobs:
 
       - name: Start Minikube with Docker driver
         run: |
-          minikube start --driver=docker
+          minikube start --driver=docker --cpus=4 --memory=8192
 
       - name: Use Minikube context
         run: |
@@ -69,11 +69,21 @@ jobs:
         run: |
           minikube kubectl -- apply -f kubernetes/option-2-kubectl/ --validate=false
 
-      - name: Verify ELK stack deployment
+      - name: Verify ELK stack deployment with extended timeout
         run: |
-          minikube kubectl -- rollout status statefulset/elasticsearch
-          minikube kubectl -- rollout status deployment/kibana
-          minikube kubectl -- rollout status deployment/logstash
+          minikube kubectl -- rollout status statefulset/elasticsearch --timeout=600s
+          minikube kubectl -- rollout status deployment/kibana --timeout=600s
+          minikube kubectl -- rollout status deployment/logstash --timeout=600s
+
+      - name: Check pod logs if failure occurs
+        if: failure()
+        run: |
+          echo "Checking Elasticsearch logs:"
+          kubectl logs -l app=elasticsearch
+          echo "Checking Kibana logs:"
+          kubectl logs -l app=kibana
+          echo "Checking Logstash logs:"
+          kubectl logs -l app=logstash
 
       - name: Forward Kibana port
         run: |
