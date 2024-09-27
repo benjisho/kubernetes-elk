@@ -65,6 +65,18 @@ jobs:
             echo "Waiting for Kubernetes API..." && sleep 10
           done
 
+      - name: Check if elastic-credentials secret exists
+        run: |
+          if ! kubectl get secret elastic-credentials; then
+            echo "Secret elastic-credentials does not exist. Creating secret..."
+            kubectl create secret generic elastic-credentials \
+              --from-literal=kibana_password=your_kibana_password \
+              --from-literal=elastic_password=your_elastic_password \
+              --from-literal=logstash_password=your_logstash_password
+          else
+            echo "Secret elastic-credentials exists."
+          fi
+
       - name: Apply Kubernetes manifests
         run: |
           minikube kubectl -- apply -f kubernetes/option-2-kubectl/ --validate=false
