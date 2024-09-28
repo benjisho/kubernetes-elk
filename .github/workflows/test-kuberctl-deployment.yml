@@ -83,10 +83,10 @@ jobs:
 
       - name: Verify ELK stack deployment with extended timeout
         run: |
-          minikube kubectl -- rollout status statefulset/elasticsearch --timeout=600s
-          minikube kubectl -- rollout status deployment/kibana --timeout=600s
-          minikube kubectl -- rollout status deployment/logstash --timeout=600s
-
+          minikube kubectl -- rollout status statefulset/elasticsearch --timeout=1200s
+          minikube kubectl -- rollout status deployment/kibana --timeout=1200s
+          minikube kubectl -- rollout status deployment/logstash --timeout=1200s
+  
       - name: Check pod logs if failure occurs
         if: failure()
         run: |

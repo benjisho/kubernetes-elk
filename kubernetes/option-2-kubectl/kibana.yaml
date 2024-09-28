@@ -25,17 +25,17 @@ spec:
                 secretKeyRef:
                   name: elastic-credentials
                   key: kibana_password
-          readinessProbe:  # Add this section
+          readinessProbe:  # Adjusted this section
             httpGet:
               path: /
               port: 5601
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60  # Increased delay
             periodSeconds: 10
             timeoutSeconds: 5
-          lifecycle:  # Add a startup delay to allow Elasticsearch time to be ready
+          lifecycle:  # Startup delay to ensure Elasticsearch is ready
             postStart:
               exec:
-                command: ["/bin/sh", "-c", "sleep 60"]
+                command: ["/bin/sh", "-c", "sleep 120"]  # Kibana waits 120s before starting
 ---
 apiVersion: v1
 kind: Service

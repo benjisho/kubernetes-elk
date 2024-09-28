@@ -27,11 +27,11 @@ spec:
         volumeMounts:
         - name: elasticsearch-data
           mountPath: /usr/share/elasticsearch/data
-        readinessProbe:  # Add this section
+        readinessProbe:  # Adjusted this section
           httpGet:
             path: /
             port: 9200
-          initialDelaySeconds: 30  # Adjust the delay as needed
+          initialDelaySeconds: 60  # Increased delay to give Elasticsearch more time to start
           periodSeconds: 10
           timeoutSeconds: 5
   volumeClaimTemplates:
